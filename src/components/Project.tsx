@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { HEADER_HEIGHT } from "./Navigation";
 
 const tasks = {
     todo: [
@@ -126,38 +127,47 @@ const navLinks: NavLink[] = [
 
 function BoardColumn({ title, count, tasks }: { title: string; count: number; tasks: any[] }) {
     return (
-        <div style={{ flex: 1, minWidth: 300, marginRight: 24 }}>
-            <div style={{ display: "flex", alignItems: "center", marginBottom: 16 }}>
+        // Column is a vertical flex container; tasks list is scrollable when overflow
+        <div style={{ flex: 1, minWidth: 300, marginRight: 24, display: 'flex', flexDirection: 'column', maxHeight: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
                 <span style={{ fontWeight: 600, fontSize: 18 }}>{title}</span>
                 <span
                     style={{
                         marginLeft: 8,
-                        background: "#f3f4f6",
-                        borderRadius: "50%",
+                        background: '#f3f4f6',
+                        borderRadius: '50%',
                         width: 24,
                         height: 24,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                         fontSize: 14,
                         fontWeight: 500,
-                        color: "#6b7280",
+                        color: '#6b7280',
                     }}
                 >
                     {count}
                 </span>
             </div>
-            {tasks.map((task, idx) => (
-                <TaskCard key={idx} {...task} />
-            ))}
+            <div style={{ overflowY: 'auto' }}>
+                {tasks.map((task, idx) => (
+                    <TaskCard key={idx} {...task} />
+                ))}
+            </div>
         </div>
     );
 }
 
 const sidebarWidth = 240;
 
-const Project: React.FC = () => (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc" }}>
+const Project: React.FC = () => {
+    const [activeTab, setActiveTab] = useState<string>(boardTabs[0]);
+
+    const isBoard = activeTab === 'Board';
+
+    return (
+    // Container fills viewport minus header so header remains visible while content scrolls
+    <div style={{ display: "flex", height: `calc(100vh - ${HEADER_HEIGHT}px)`, background: "#f8fafc", overflow: 'hidden' }}>
         {/* Sidebar */}
         <aside
             style={{
@@ -170,7 +180,7 @@ const Project: React.FC = () => (
             }}
         >
             <div style={{ fontWeight: 700, fontSize: 22, padding: "28px 32px 24px" }}>Projects</div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, overflowY: 'auto', paddingRight: 0 }}>
                 {projects.map((link, idx) => (
                     <div
                         key={link.label}
@@ -192,7 +202,7 @@ const Project: React.FC = () => (
                     </div>
                 ))}
             </div>
-            <div style={{ padding: "0 32px", marginTop: "auto" }}>
+            <div style={{ padding: "0 32px", marginTop: "auto", background: '#fff' }}>
                 <button
                     style={{
                         width: "100%",
@@ -216,8 +226,8 @@ const Project: React.FC = () => (
         </aside>
 
         {/* Main Content */}
-        <main style={{ flex: 1, padding: "0 0 0 0", minHeight: "100vh" }}>
-            <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 40px 0 40px" }}>
+        <main style={{ flex: 1, height: '100%', overflowY: isBoard ? 'hidden' : 'auto', padding: "0 0 0 0" }}>
+            <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 40px 0 40px", display: 'flex', flexDirection: 'column', height: '100%' }}>
                 {/* Project Title */}
                 <div>
                     <div style={{ fontSize: 36, fontWeight: 700, color: "#1e293b" }}>Project Alpha</div>
@@ -226,16 +236,17 @@ const Project: React.FC = () => (
                     </div>
                 </div>
                 {/* Tabs */}
-                <div style={{ display: "flex", borderBottom: "1px solid #e5e7eb", marginBottom: 32 }}>
-                    {boardTabs.map((tab, idx) => (
+                <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', marginBottom: 32 }}>
+                    {boardTabs.map((tab) => (
                         <div
                             key={tab}
+                            onClick={() => setActiveTab(tab)}
                             style={{
-                                padding: "0 24px 12px 0",
-                                fontWeight: idx === 0 ? 600 : 500,
-                                color: idx === 0 ? "#2563eb" : "#64748b",
-                                borderBottom: idx === 0 ? "2.5px solid #2563eb" : "none",
-                                cursor: "pointer",
+                                padding: '0 24px 12px 0',
+                                fontWeight: activeTab === tab ? 600 : 500,
+                                color: activeTab === tab ? '#2563eb' : '#64748b',
+                                borderBottom: activeTab === tab ? '2.5px solid #2563eb' : 'none',
+                                cursor: 'pointer',
                                 fontSize: 16,
                             }}
                         >
@@ -243,8 +254,8 @@ const Project: React.FC = () => (
                         </div>
                     ))}
                 </div>
-                {/* Board */}
-                <div style={{ display: "flex", gap: 24 }}>
+                {/* Board / List container */}
+                <div style={{ display: 'flex', gap: 24, flex: 1, overflowX: isBoard ? 'auto' : 'hidden', alignItems: 'flex-start' }}>
                     <BoardColumn title="To Do" count={tasks.todo.length} tasks={tasks.todo} />
                     <BoardColumn title="In Progress" count={tasks.inProgress.length} tasks={tasks.inProgress} />
                     <BoardColumn title="Done" count={tasks.done.length} tasks={tasks.done} />
@@ -252,6 +263,7 @@ const Project: React.FC = () => (
             </div>
         </main>
     </div>
-);
+    );
+}
 
 export default Project;
