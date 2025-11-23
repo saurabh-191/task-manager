@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import {
     AppBar,
     Toolbar,
@@ -55,6 +55,18 @@ const SearchBox = styled(Paper)(({ theme }) => ({
 
 const Navigation: React.FC = () => {
     const theme = useTheme();
+    const location = useLocation();
+
+    const isRouteActive = (path: string) => {
+        if (!path) return false;
+        if (path === '/') return location.pathname === '/';
+        return location.pathname === path || location.pathname.startsWith(path + '/') || location.pathname.startsWith(path);
+    };
+
+    const navSx = (path: string, extra: any = {}) => ({
+        ...extra,
+        ...(isRouteActive(path) ? { background: theme.palette.primary.main, color: '#fff', fontWeight: 700 } : {}),
+    });
 
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
 
@@ -96,47 +108,43 @@ const Navigation: React.FC = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         {!isAuthenticated ? (
                             <>
-                                <NavButton
-                                    component={RouterLink}
-                                    to="/login"
-                                    variant="text"
-                                >
+                                <NavButton component={RouterLink} to="/login" variant="text" sx={navSx('/login')}>
                                     Login
                                 </NavButton>
                                 <NavButton
                                     component={RouterLink}
                                     to="/signup"
                                     variant="contained"
-                                    sx={{
+                                    sx={navSx('/signup', {
                                         ml: 1,
                                         background: theme.palette.primary.main,
                                         color: '#fff',
                                         '&:hover': {
                                             background: theme.palette.primary.dark,
                                         },
-                                    }}
+                                    })}
                                 >
                                     Sign Up
                                 </NavButton>
                             </>
                         ) : (
                             <>
-                                <NavButton component={RouterLink} to="/">
+                                <NavButton component={RouterLink} to="/" sx={navSx('/')}>
                                     Home
                                 </NavButton>
-                                <NavButton component={RouterLink} to="/my-tasks">
+                                <NavButton component={RouterLink} to="/my-tasks" sx={navSx('/my-tasks')}>
                                     My Tasks
                                 </NavButton>
-                                <NavButton component={RouterLink} to="/projects">
+                                <NavButton component={RouterLink} to="/projects" sx={navSx('/projects')}>
                                     Projects
                                 </NavButton>
-                                <NavButton component={RouterLink} to="/reports">
+                                <NavButton component={RouterLink} to="/reports" sx={navSx('/reports')}>
                                     Reports
                                 </NavButton>
-                                <NavButton component={RouterLink} to="/worklogs">
+                                <NavButton component={RouterLink} to="/worklogs" sx={navSx('/worklogs')}>
                                     WorkLogs
                                 </NavButton>
-                                <NavButton component={RouterLink} to="/ai-assistant">
+                                <NavButton component={RouterLink} to="/ai-assistant" sx={navSx('/ai-assistant')}>
                                     AI Assistant
                                 </NavButton>
                             </>
