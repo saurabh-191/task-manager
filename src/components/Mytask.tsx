@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { HEADER_HEIGHT } from "./Navigation";
 
 // Extended sample task data
 const sampleTasks = [
@@ -24,7 +25,7 @@ const sampleTasks = [
     { id: 410, title: "Add export to CSV", status: "Done", type: "feature", assignee: "S", comments: 1 },
 ];
 
-const sections = [
+const initialSections = [
     { key: "To Do", label: "TO DO", color: "#4F8CFF" },
     { key: "In Progress", label: "IN PROGRESS", color: "#FFB84F" },
     { key: "In Review", label: "IN REVIEW", color: "#6DD28A" },
@@ -60,20 +61,65 @@ const getAvatar = (assignee: string) => {
 const Mytask: React.FC = () => {
     const [view, setView] = useState<"kanban" | "list">("kanban");
 
-    // Group tasks by status
+    // Make sections and tasks stateful so we can add columns and open modals
+    const [sectionsState, setSectionsState] = useState(initialSections);
+    const [tasks, setTasks] = useState(sampleTasks);
+    const [addingColumn, setAddingColumn] = useState(false);
+    const [newColumnName, setNewColumnName] = useState("");
+    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+    // Local comments map for tasks (taskId -> array of comments)
+    const [localComments, setLocalComments] = useState<Record<number, Array<{author:string; text:string; when:string}>>>({});
+    const [commentText, setCommentText] = useState("");
+    // Activity tabs: 'all' | 'comments' | 'history' | 'worklog'
+    const [activityTab, setActivityTab] = useState<'all' | 'comments' | 'history' | 'worklog'>('comments');
+    // Worklog state per task
+    const [worklogs, setWorklogs] = useState<Record<number, Array<{hours:number; description:string; date:string; author:string}>>>({});
+    const [worklogModalOpen, setWorklogModalOpen] = useState(false);
+    const [worklogForm, setWorklogForm] = useState<{hours:string; description:string; date:string}>({hours:'', description:'', date:''});
+
+    // Group tasks by status using the stateful sections and tasks
     const groupedTasks: { [key: string]: Task[] } = {};
-    sections.forEach((section) => {
-        groupedTasks[section.key] = sampleTasks.filter(
+    sectionsState.forEach((section) => {
+        groupedTasks[section.key] = tasks.filter(
             (task) => task.status === section.key
         );
     });
 
+    const colors = ["#4F8CFF", "#FFB84F", "#6DD28A", "#A7A7A7", "#D08CFF", "#FF8CA6"];
+
+    const addColumn = (label: string) => {
+        const key = label.trim();
+        if (!key) return;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        setSectionsState((s) => [...s, { key, label: label.toUpperCase(), color }]);
+        setAddingColumn(false);
+        setNewColumnName("");
+    };
+
+    const openTask = (task: Task) => setSelectedTask(task);
+    const closeTask = () => setSelectedTask(null);
+    const saveWorklog = () => {
+        if (!selectedTask) return;
+        const hours = parseFloat(worklogForm.hours || '0');
+        if (!hours || !worklogForm.date) return;
+        const entry = { hours, description: worklogForm.description || '', date: worklogForm.date, author: 'You' };
+        setWorklogs(prev => {
+            const existing = prev[selectedTask.id] || [];
+            return { ...prev, [selectedTask.id]: [entry, ...existing] };
+        });
+        // reset and close
+        setWorklogForm({ hours: '', description: '', date: '' });
+        setWorklogModalOpen(false);
+    };
+
     return (
+        // Constrain page to viewport minus header so header stays visible and we control scrolling
         <div style={{
             padding: 10,
             background: "#f7f9fb",
-            minHeight: "100vh",
-            boxSizing: "border-box"
+            height: `calc(100vh - ${HEADER_HEIGHT}px)`,
+            boxSizing: "border-box",
+            display: 'flex',
         }}>
             <div style={{
                 maxWidth: '100%',
@@ -82,6 +128,11 @@ const Mytask: React.FC = () => {
                 borderRadius: 16,
                 boxShadow: "0 2px 16px rgba(0,0,0,0.06)",
                 padding: 32,
+                display: 'flex',
+                flexDirection: 'column',
+                width: '100%',
+                height: '100%',
+                overflow: 'hidden', // keep scrolling under our control
             }}>
                 <div style={{
                     display: 'flex',
@@ -141,8 +192,10 @@ const Mytask: React.FC = () => {
                     </div>
                 </div>
 
+                {/* Content area: flex:1 so we can enable internal scroll when needed */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                 {view === "list" ? (
-                    <div style={{ overflowX: "auto" }}>
+                    <div style={{ overflowX: "auto", overflowY: 'auto', flex: 1 }}>
                         <table style={{
                             width: "100%",
                             borderCollapse: "collapse",
@@ -167,12 +220,12 @@ const Mytask: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {sampleTasks.length === 0 ? (
+                                {tasks.length === 0 ? (
                                     <tr>
                                         <td colSpan={2} style={{ color: "#aaa", fontStyle: "italic", padding: 16 }}>No tasks</td>
                                     </tr>
                                 ) : (
-                                    sampleTasks.map((task) => (
+                                    tasks.map((task) => (
                                         <tr key={task.id}>
                                             <td style={{
                                                 padding: "10px 8px",
@@ -181,7 +234,7 @@ const Mytask: React.FC = () => {
                                             <td style={{
                                                 padding: "10px 8px",
                                                 borderBottom: "1px solid #f0f0f0",
-                                                color: sections.find(s => s.key === task.status)?.color,
+                                                color: sectionsState.find(s => s.key === task.status)?.color,
                                                 fontWeight: 500
                                             }}>{task.status}</td>
                                         </tr>
@@ -196,11 +249,13 @@ const Mytask: React.FC = () => {
                         gap: 24,
                         overflowX: "auto",
                         paddingBottom: 16,
-                        minHeight: 400,
+                        // fill remaining space so columns can use full height and scroll internally
+                        flex: 1,
+                        minHeight: 0,
                         background: "#f7f9fb",
                         borderRadius: 12,
                     }}>
-                        {sections.map((section) => (
+                        {sectionsState.map((section) => (
                             <div
                                 key={section.key}
                                 style={{
@@ -212,9 +267,9 @@ const Mytask: React.FC = () => {
                                     flex: "0 0 320px",
                                     display: "flex",
                                     flexDirection: "column",
-                                    maxHeight: 520,
-                                }}
-                            >
+                                    height: '100%',
+                                    minHeight: 0,
+                                }}>
                                 <div style={{
                                     fontWeight: 700,
                                     fontSize: 15,
@@ -244,8 +299,7 @@ const Mytask: React.FC = () => {
                                 <div style={{
                                     flex: 1,
                                     overflowY: "auto",
-                                    minHeight: 100,
-                                    maxHeight: 420,
+                                    minHeight: 0,
                                     paddingRight: 4,
                                 }}>
                                     {groupedTasks[section.key].length === 0 ? (
@@ -270,6 +324,7 @@ const Mytask: React.FC = () => {
                                                 }}
                                                 onMouseOver={e => (e.currentTarget.style.boxShadow = "0 4px 16px #4F8CFF22")}
                                                 onMouseOut={e => (e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)")}
+                                                onClick={() => openTask(task)}
                                             >
                                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                                     <span style={{
@@ -318,6 +373,307 @@ const Mytask: React.FC = () => {
                                 </div>
                             </div>
                         ))}
+                        {/* Add column card */}
+                        <div style={{
+                            minWidth: 220,
+                            background: "#ffffff00",
+                            borderRadius: 8,
+                            padding: 12,
+                            flex: "0 0 220px",
+                            display: "flex",
+                            alignItems: "flex-start",
+                            height: '100%'
+                        }}>
+                            {!addingColumn ? (
+                                <div onClick={() => setAddingColumn(true)} role="button" tabIndex={0}
+                                    style={{
+                                        width: '100%',
+                                        height: 48,
+                                        borderRadius: 8,
+                                        border: '2px dashed #e6eef6',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: '#4F8CFF',
+                                        cursor: 'pointer',
+                                        fontWeight: 700
+                                    }}>
+                                    + Add Column
+                                </div>
+                            ) : (
+                                <div style={{
+                                    width: '100%',
+                                    background: '#fff',
+                                    padding: 12,
+                                    borderRadius: 8,
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+                                }}>
+                                    <input autoFocus value={newColumnName} onChange={e => setNewColumnName(e.target.value)} placeholder="Column name" style={{width: '100%', padding: 8, borderRadius: 6, border: '1px solid #e8eef6'}} />
+                                    <div style={{display: 'flex', gap: 8, marginTop: 8}}>
+                                        <button onClick={() => addColumn(newColumnName)} style={{flex: 1, padding: '8px 10px', background: '#4F8CFF', color: '#fff', border: 'none', borderRadius: 6}}>Add</button>
+                                        <button onClick={() => { setAddingColumn(false); setNewColumnName(''); }} style={{padding: '8px 10px', background: '#f0f4fb', border: 'none', borderRadius: 6}}>Cancel</button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+                {worklogModalOpen && selectedTask && (
+                    <div style={{position:'fixed', inset:0, background:'rgba(2,6,23,0.45)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:3000}} onClick={() => setWorklogModalOpen(false)}>
+                        <div onClick={e => e.stopPropagation()} style={{width: 520, maxWidth:'96%', background:'#fff', borderRadius:8, padding:18, boxShadow:'0 12px 40px rgba(2,6,23,0.2)'}}>
+                            <h3 style={{margin:0, marginBottom:12}}>Add work log</h3>
+                            <div style={{display:'flex', flexDirection:'column', gap:8}}>
+                                <label style={{fontSize:13, color:'#64748b'}}>Hours (decimal)</label>
+                                <input type='number' min='0' step='0.25' value={worklogForm.hours} onChange={e => setWorklogForm(s => ({...s, hours: e.target.value}))} style={{padding:8, borderRadius:6, border:'1px solid #eef3f9'}} />
+                                <label style={{fontSize:13, color:'#64748b'}}>Date & time</label>
+                                <input type='datetime-local' value={worklogForm.date} onChange={e => setWorklogForm(s => ({...s, date: e.target.value}))} style={{padding:8, borderRadius:6, border:'1px solid #eef3f9'}} />
+                                <label style={{fontSize:13, color:'#64748b'}}>Description</label>
+                                <textarea rows={4} value={worklogForm.description} onChange={e => setWorklogForm(s => ({...s, description: e.target.value}))} style={{padding:8, borderRadius:6, border:'1px solid #eef3f9'}} />
+                                <div style={{display:'flex', gap:8, justifyContent:'flex-end', marginTop:8}}>
+                                    <button onClick={() => setWorklogModalOpen(false)} style={{padding:'8px 12px', borderRadius:6, background:'#fff', border:'1px solid #eef3f9'}}>Close</button>
+                                    <button onClick={saveWorklog} style={{padding:'8px 12px', borderRadius:6, background:'#0b5fff', color:'#fff', border:'none'}}>Save</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                </div>
+                {/* Task detail modal (Jira-like polish) */}
+                {selectedTask && (
+                    <div
+                        style={{
+                            position: 'fixed',
+                            inset: 0,
+                            background: 'rgba(2,6,23,0.45)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 2000,
+                            padding: 24
+                        }}
+                        onClick={closeTask}
+                    >
+                        <div
+                            onClick={e => e.stopPropagation()}
+                            role="dialog"
+                            aria-modal="true"
+                            style={{
+                                width: '100%',
+                                maxWidth: 1280,
+                                height: '90vh',
+                                background: '#fff',
+                                borderRadius: 10,
+                                padding: 20,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                boxShadow: '0 20px 60px rgba(2,6,23,0.35)',
+                                fontFamily: 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial',
+                                overflow: 'hidden'
+                            }}
+                        >
+                            {/* Header */}
+                            <div style={{display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12}}>
+                                <div style={{fontSize: 13, color: '#6b7280'}}>Project Alpha</div>
+                                <div style={{height: 18, width: 1, background: '#eef3f9'}} />
+                                <div style={{fontSize: 13, color: '#0b5fff', fontWeight: 700}}>SCRUM-2</div>
+                                <div style={{marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center'}}>
+                                    <button aria-label="watch" title="Watch" style={{border: 'none', background: '#f6f8fb', padding: 8, borderRadius: 8, cursor: 'pointer'}}>👁️</button>
+                                    <button aria-label="share" title="Share" style={{border: 'none', background: '#f6f8fb', padding: 8, borderRadius: 8, cursor: 'pointer'}}>🔗</button>
+                                    <button aria-label="more" title="More" style={{border: 'none', background: '#f6f8fb', padding: 8, borderRadius: 8, cursor: 'pointer'}}>⋯</button>
+                                    <button onClick={closeTask} aria-label="close" title="Close" style={{border: 'none', background: '#fff', padding: 6, borderRadius: 6, cursor: 'pointer'}}>✕</button>
+                                </div>
+                            </div>
+
+                            <div style={{display: 'flex', gap: 20, flex: 1, minHeight: 0, overflow: 'hidden'}}>
+                                {/* Left main column */}
+                                <div style={{flex: 1.6, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden'}}>
+                                    <div style={{padding: '6px 0 12px 0', borderBottom: '1px solid #eef3f9'}}>
+                                        <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
+                                            <div style={{fontSize: 12, color: '#0b5fff', background: '#eef6ff', padding: '6px 10px', borderRadius: 8, fontWeight: 700}}>{selectedTask.status}</div>
+                                            <h1 style={{margin: 0, fontSize: 24, lineHeight: 1.15, color: '#0f1724'}}>{selectedTask.title}</h1>
+                                            <div style={{marginLeft: 'auto', display: 'flex', gap: 8}}>
+                                                <div style={{fontSize: 13, color: '#6b7280'}}>#{selectedTask.id}</div>
+                                            </div>
+                                        </div>
+                                        <div style={{marginTop: 10, color: '#475569'}}>Edit description</div>
+                                    </div>
+
+                                    <div style={{flex: 1, display: 'flex', gap: 20, minHeight: 0, overflow: 'hidden', paddingTop: 14}}>
+                                        <div style={{flex: 1, overflowY: 'auto', paddingRight: 6, minHeight: 0}}>
+                                            <section>
+                                                <h4 style={{margin: '0 0 8px 0', fontSize: 16}}>Description</h4>
+                                                <div style={{background: '#fbfdff', padding: 14, borderRadius: 8, color: '#334155'}}>A short description goes here. Use this area for acceptance criteria, context, and implementation notes.</div>
+                                            </section>
+
+                                            <section style={{marginTop: 18}}>
+                                                <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                                                    <h4 style={{margin: 0, fontSize: 16}}>Subtasks</h4>
+                                                    <div style={{fontSize: 13, color: '#94a3b8'}}>0% Done</div>
+                                                </div>
+                                                <div style={{marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8}}>
+                                                    {[1,2,3].map(i => (
+                                                        <div key={i} style={{display: 'flex', alignItems: 'center', gap: 10, background: '#fff', padding: 12, borderRadius: 8, border: '1px solid #eef3f9'}}>
+                                                            <input type="checkbox" />
+                                                            <div style={{flex:1}}><div style={{fontWeight:600}}>{`Subtask ${i}`}</div><div style={{fontSize:13, color:'#64748b'}}>Small note about the subtask</div></div>
+                                                            <div style={{fontSize:13, color:'#94a3b8'}}>To Do</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </section>
+
+                                            {/* Activity area: tabs + content */}
+                                            <section style={{marginTop: 18, display: 'flex', flexDirection: 'column', gap: 12}}>
+                                                <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+                                                    <div style={{fontSize:16, fontWeight:700}}>Activity</div>
+                                                    <div style={{marginLeft: 'auto', display: 'flex', gap: 8}}>
+                                                        <button onClick={() => setActivityTab('all')} style={{padding: '6px 10px', borderRadius: 8, background: activityTab === 'all' ? '#eef6ff' : '#fff', border: '1px solid #eef3f9'}}>All</button>
+                                                        <button onClick={() => setActivityTab('comments')} style={{padding: '6px 10px', borderRadius: 8, background: activityTab === 'comments' ? '#eef6ff' : '#fff', border: '1px solid #eef3f9'}}>Comments</button>
+                                                        <button onClick={() => setActivityTab('history')} style={{padding: '6px 10px', borderRadius: 8, background: activityTab === 'history' ? '#eef6ff' : '#fff', border: '1px solid #eef3f9'}}>History</button>
+                                                        <button onClick={() => setActivityTab('worklog')} style={{padding: '6px 10px', borderRadius: 8, background: activityTab === 'worklog' ? '#eef6ff' : '#fff', border: '1px solid #eef3f9'}}>Work log</button>
+                                                    </div>
+                                                </div>
+
+                                                <div style={{display: activityTab === 'comments' || activityTab === 'all' ? 'block' : 'none'}}>
+                                                    <h4 style={{margin: '8px 0 8px 0', fontSize: 16}}>Comments</h4>
+                                                    <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+                                                        {/* existing mock comments */}
+                                                        <div style={{display:'flex', gap: 12}}>
+                                                            {getAvatar('S')}
+                                                            <div style={{background: '#f7f9fb', padding: 12, borderRadius: 8}}>
+                                                                <div style={{fontWeight:700}}>Sarah Chen <span style={{color:'#94a3b8', fontSize:12, marginLeft:8}}>2 days ago</span></div>
+                                                                <div style={{color:'#334155'}}>Initial API development is complete. Moving on to testing.</div>
+                                                            </div>
+                                                        </div>
+                                                        <div style={{display:'flex', gap: 12}}>
+                                                            {getAvatar('D')}
+                                                            <div style={{background: '#f7f9fb', padding: 12, borderRadius: 8}}>
+                                                                <div style={{fontWeight:700}}>David Lee <span style={{color:'#94a3b8', fontSize:12, marginLeft:8}}>1 day ago</span></div>
+                                                                <div style={{color:'#334155'}}>Great work, Sarah! I'll start working on the front-end integration.</div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* render local comments for this task, if any */}
+                                                        {selectedTask && localComments[selectedTask.id] && localComments[selectedTask.id].map((c, idx) => (
+                                                            <div key={`local-${idx}`} style={{display:'flex', gap:12}}>
+                                                                {getAvatar(c.author.charAt(0).toUpperCase())}
+                                                                <div style={{background: '#f7f9fb', padding: 12, borderRadius: 8}}>
+                                                                    <div style={{fontWeight:700}}>{c.author} <span style={{color:'#94a3b8', fontSize:12, marginLeft:8}}>{c.when}</span></div>
+                                                                    <div style={{color:'#334155'}}>{c.text}</div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+
+                                                        {/* input to add a new comment (rich-ish editor) */}
+                                                        <div style={{display:'flex', gap:8, alignItems: 'flex-start', marginTop: 6}}>
+                                                            <div>{getAvatar('Y')}</div>
+                                                            <div style={{flex:1, display:'flex', flexDirection:'column', gap:8}}>
+                                                                {/* simple toolbar */}
+                                                                <div style={{display:'flex', gap:8}}>
+                                                                    <button onClick={() => setCommentText(prev => prev + '\n**Bold** ')} style={{padding:'6px 10px', borderRadius:6}}>Bold</button>
+                                                                    <button onClick={() => setCommentText(prev => prev + '\n_Italic_ ')} style={{padding:'6px 10px', borderRadius:6}}>Italic</button>
+                                                                    <button onClick={() => setCommentText(prev => prev + '\n- Checklist item ')} style={{padding:'6px 10px', borderRadius:6}}>Checklist</button>
+                                                                </div>
+                                                                <textarea value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Add a comment..." rows={4} style={{width:'100%', padding: 12, borderRadius: 8, border: '1px solid #eef3f9', resize: 'vertical'}} />
+                                                                <div style={{display:'flex', gap:8, justifyContent: 'flex-end'}}>
+                                                                    <button onClick={() => { setCommentText(''); }} style={{padding: '8px 12px', borderRadius: 8, background:'#fff', border:'1px solid #eef3f9'}}>Cancel</button>
+                                                                    <button onClick={() => {
+                                                                        if (!selectedTask) return;
+                                                                        const text = commentText.trim();
+                                                                        if (!text) return;
+                                                                        setLocalComments(prev => {
+                                                                            const existing = prev[selectedTask.id] || [];
+                                                                            return { ...prev, [selectedTask.id]: [{author: 'You', text, when: 'just now'}, ...existing] };
+                                                                        });
+                                                                        setTasks(prev => prev.map(t => t.id === selectedTask.id ? { ...t, comments: t.comments + 1 } : t));
+                                                                        setCommentText('');
+                                                                    }} style={{padding: '8px 12px', borderRadius: 8, background:'#0b5fff', color:'#fff', border:'none'}}>Post</button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* History tab (stub) */}
+                                                <div style={{display: activityTab === 'history' || activityTab === 'all' ? 'block' : 'none'}}>
+                                                    <h4 style={{margin: '8px 0 8px 0', fontSize: 16}}>History</h4>
+                                                    <div style={{background:'#fff', padding:12, borderRadius:8, border:'1px solid #eef3f9'}}>
+                                                        <div style={{fontSize:13}}>• Task created by Alex Johnson</div>
+                                                        <div style={{fontSize:13}}>• Status changed from "In Progress" to "In Review"</div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Work log tab */}
+                                                <div style={{display: activityTab === 'worklog' || activityTab === 'all' ? 'block' : 'none'}}>
+                                                    <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+                                                        <h4 style={{margin: '8px 0 8px 0', fontSize: 16}}>Work log</h4>
+                                                        <div>
+                                                            <button onClick={() => setWorklogModalOpen(true)} style={{padding:'8px 12px', borderRadius:8, background:'#0b5fff', color:'#fff', border:'none'}}>Add work log</button>
+                                                        </div>
+                                                    </div>
+                                                    <div style={{marginTop:8, display:'flex', flexDirection:'column', gap:8}}>
+                                                        {selectedTask && worklogs[selectedTask.id] && worklogs[selectedTask.id].length > 0 ? (
+                                                            worklogs[selectedTask.id].map((w, i) => (
+                                                                <div key={i} style={{background:'#fff', padding:12, borderRadius:8, border:'1px solid #eef3f9'}}>
+                                                                    <div style={{fontWeight:700}}>{w.author} — {w.hours}h</div>
+                                                                    <div style={{fontSize:13, color:'#64748b'}}>{w.date}</div>
+                                                                    <div style={{marginTop:8}}>{w.description}</div>
+                                                                </div>
+                                                            ))
+                                                        ) : (
+                                                            <div style={{color:'#94a3b8'}}>No work logs yet.</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </section>
+                                        </div>
+
+                                        {/* removed Quick Actions - simplified left column */}
+                                    </div>
+                                </div>
+
+                                {/* Right sidebar */}
+                                <aside style={{width: 320, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto', paddingLeft: 4}}>
+                                    <div style={{padding: 14, borderRadius: 10, border: '1px solid #eef3f9', background: '#fff'}}>
+                                        <div style={{fontWeight: 700, marginBottom: 8}}>Assignee</div>
+                                        <div style={{display:'flex', alignItems:'center', gap:8}}>
+                                            {getAvatar(selectedTask.assignee)}
+                                            <div style={{fontWeight:700}}>{selectedTask.assignee === 'A' ? 'Saurabh Singh' : `User ${selectedTask.assignee}`}</div>
+                                        </div>
+                                    </div>
+
+                                    <div style={{padding: 14, borderRadius: 10, border: '1px solid #eef3f9', background: '#fff'}}>
+                                        <div style={{fontWeight:700, marginBottom:8}}>Details</div>
+                                        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:8}}>
+                                            <div style={{color:'#64748b', fontSize:13}}>Type</div><div style={{fontWeight:600}}>{selectedTask.type}</div>
+                                            <div style={{color:'#64748b', fontSize:13}}>Comments</div><div style={{fontWeight:600}}>{selectedTask.comments}</div>
+                                            <div style={{color:'#64748b', fontSize:13}}>Priority</div><div style={{fontWeight:600}}>Medium</div>
+                                            <div style={{color:'#64748b', fontSize:13}}>Due</div><div style={{fontWeight:600}}>—</div>
+                                        </div>
+                                    </div>
+
+                                    <div style={{padding: 14, borderRadius: 10, border: '1px solid #eef3f9', background: '#fff'}}>
+                                        <div style={{fontWeight:700, marginBottom:8}}>Attachments</div>
+                                        <div style={{background:'#f8fbff', padding:10, borderRadius:8, display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+                                            <div style={{fontSize:14}}>API_spec.pdf</div>
+                                            <div style={{color:'#0b5fff'}}>⬇</div>
+                                        </div>
+                                    </div>
+
+                                    <div style={{padding: 14, borderRadius: 10, border: '1px solid #eef3f9', background: '#fff'}}>
+                                        <div style={{fontWeight:700, marginBottom:8}}>Activity</div>
+                                        <div style={{display:'flex', flexDirection:'column', gap:8}}>
+                                            <div style={{fontSize:13}}>• Task created by Alex Johnson</div>
+                                            <div style={{fontSize:13}}>• Assigned to {selectedTask.assignee}</div>
+                                        </div>
+                                    </div>
+
+                                    <div style={{display:'flex', gap: 8}}>
+                                        <button onClick={closeTask} style={{flex:1, padding:'10px 12px', borderRadius:8, background:'#fff', border:'1px solid #eef3f9'}}>Close</button>
+                                        <button style={{flex:1, padding:'10px 12px', borderRadius:8, background:'#0b5fff', color:'#fff', border:'none'}}>Edit</button>
+                                    </div>
+                                </aside>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
