@@ -1,9 +1,13 @@
 import React, { useState } from "react";
+// CKEditor
+
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import { HEADER_HEIGHT } from "./Navigation";
 
 // Extended sample task data
 const sampleTasks = [
-    { id: 205, title: "Implement feedback collector", status: "To Do", type: "feature", assignee: "A", comments: 9 },
+    { id: 205, title: "Implement feedback collector", status: "To Do", type: "feature", assignee: "A", comments: 9, description: "" },
     { id: 206, title: "Bump version for new API for billing", status: "To Do", type: "bug", assignee: "B", comments: 3 },
     { id: 208, title: "Add NPS feedback to wallboard", status: "To Do", type: "feature", assignee: "C", comments: 1 },
     { id: 213, title: "Update T&C copy with v1.9 from the writers guild in all products that have cross country compliance", status: "In Progress", type: "bug", assignee: "D", comments: 2 },
@@ -22,7 +26,7 @@ const sampleTasks = [
     { id: 407, title: "Implement dark mode", status: "To Do", type: "feature", assignee: "P", comments: 5 },
     { id: 408, title: "Refactor notification system", status: "In Progress", type: "feature", assignee: "Q", comments: 2 },
     { id: 409, title: "Accessibility improvements", status: "In Review", type: "feature", assignee: "R", comments: 3 },
-    { id: 410, title: "Add export to CSV", status: "Done", type: "feature", assignee: "S", comments: 1 },
+    { id: 410, title: "Add export to CSV", status: "Done", type: "feature", assignee: "S", comments: 1, description: "" },
 ];
 
 const initialSections = [
@@ -76,6 +80,7 @@ const Mytask: React.FC = () => {
     const [worklogs, setWorklogs] = useState<Record<number, Array<{hours:number; description:string; date:string; author:string}>>>({});
     const [worklogModalOpen, setWorklogModalOpen] = useState(false);
     const [worklogForm, setWorklogForm] = useState<{hours:string; description:string; date:string}>({hours:'', description:'', date:''});
+    const [editingDescription, setEditingDescription] = useState(false);
 
     // Group tasks by status using the stateful sections and tasks
     const groupedTasks: { [key: string]: Task[] } = {};
