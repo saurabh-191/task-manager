@@ -15,8 +15,11 @@ const completionData = [40, 80, 50, 60, 45, 55];
 const progressData = [60, 65, 62, 70, 60, 80, 65];
 
 const Reports: React.FC = () => {
+    // Basic mobile detection via window width, or could use hook. 
+    // Since we're using simple inline styles here, let's just make it flex-wrap friendly.
+
     return (
-        <div style={{ padding: "32px 40px", background: "#fafbfc", minHeight: "100vh" }}>
+        <div style={{ padding: "24px", background: "#fafbfc", minHeight: "100vh" }}>
             {/* Header */}
             <div>
                 <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 4 }}>Reporting & Analytics</h1>
@@ -28,7 +31,7 @@ const Reports: React.FC = () => {
             {/* Filters */}
             <div style={{ marginBottom: 32 }}>
                 <div style={{ fontWeight: 600, marginBottom: 12 }}>Filters</div>
-                <div style={{ display: "flex", gap: 12 }}>
+                <div style={{ display: "flex", gap: 12, flexWrap: 'wrap' }}>
                     <select style={filterStyle}>
                         <option>Project</option>
                     </select>
@@ -45,7 +48,7 @@ const Reports: React.FC = () => {
             </div>
 
             {/* Project Overview */}
-            <div style={{ display: "flex", gap: 24, marginBottom: 32 }}>
+            <div style={{ display: "flex", gap: 24, marginBottom: 32, flexWrap: 'wrap' }}>
                 {/* Task Completion Rate */}
                 <div style={cardStyle}>
                     <div style={{ fontWeight: 600, marginBottom: 8 }}>Task Completion Rate</div>
@@ -154,6 +157,7 @@ const filterStyle: React.CSSProperties = {
     fontWeight: 500,
     color: "#374151",
     outline: "none",
+    flex: '1 0 auto' // Allow filters to grow/shrink
 };
 
 const cardStyle: React.CSSProperties = {
@@ -162,7 +166,7 @@ const cardStyle: React.CSSProperties = {
     boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
     padding: 24,
     flex: 1,
-    minWidth: 320,
+    minWidth: 300,
 };
 
 export default Reports;

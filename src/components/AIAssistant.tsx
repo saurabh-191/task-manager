@@ -115,25 +115,25 @@ const AI_Assistant: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: 20,
+            padding: window.innerWidth < 600 ? 0 : 20, // Remove padding on mobile for full screen feel
             boxSizing: 'border-box',
             background: '#f3f4f6'
         }}>
-                <div style={{
-                    width: '100%',
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    borderRadius: 8,
-                    background: '#fff',
-                    boxShadow: 'none',
-                    overflow: 'hidden',
-                    fontFamily: 'Inter, sans-serif',
-                    zIndex: 9999,
-                    border: '1px solid #e6eef6'
-                }}>
+            <div style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                borderRadius: window.innerWidth < 600 ? 0 : 8,
+                background: '#fff',
+                boxShadow: 'none',
+                overflow: 'hidden',
+                fontFamily: 'Inter, sans-serif',
+                zIndex: 0,
+                border: window.innerWidth < 600 ? 'none' : '1px solid #e6eef6'
+            }}>
                 <header style={{
-                    padding: '18px 22px',
+                    padding: '16px 20px',
                     borderBottom: '1px solid #eef2f6',
                     fontWeight: 700,
                     fontSize: 20,
@@ -145,7 +145,7 @@ const AI_Assistant: React.FC = () => {
                     AI Assistant
                 </header>
 
-                <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 20, background: '#f7f8fa' }}>
+                <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 16, background: '#f7f8fa' }}>
                     {messages.map((msg) => (
                         <div
                             key={msg.id}
@@ -153,7 +153,7 @@ const AI_Assistant: React.FC = () => {
                                 display: 'flex',
                                 flexDirection: msg.sender === 'user' ? 'row-reverse' : 'row',
                                 alignItems: 'flex-start',
-                                marginBottom: 22,
+                                marginBottom: 20,
                             }}
                         >
                             {msg.sender === 'user' ? (
@@ -161,10 +161,10 @@ const AI_Assistant: React.FC = () => {
                                     src={msg.avatar}
                                     alt={msg.name}
                                     style={{
-                                        width: 36,
-                                        height: 36,
+                                        width: 32,
+                                        height: 32,
                                         borderRadius: '50%',
-                                        marginLeft: 12,
+                                        marginLeft: 10,
                                         marginRight: 0,
                                         objectFit: 'cover',
                                         border: '2px solid #e5e7eb',
@@ -172,8 +172,8 @@ const AI_Assistant: React.FC = () => {
                                 />
                             ) : (
                                 <div style={{
-                                    width: 36,
-                                    height: 36,
+                                    width: 32,
+                                    height: 32,
                                     borderRadius: '50%',
                                     background: '#e0e7ef',
                                     color: '#3b82f6',
@@ -181,8 +181,8 @@ const AI_Assistant: React.FC = () => {
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     fontWeight: 700,
-                                    fontSize: 18,
-                                    marginRight: 12,
+                                    fontSize: 16,
+                                    marginRight: 10,
                                     marginLeft: 0,
                                 }}>
                                     AI
@@ -190,11 +190,11 @@ const AI_Assistant: React.FC = () => {
                             )}
 
                             <div style={{
-                                maxWidth: 340,
+                                maxWidth: '80%',
                                 background: msg.sender === 'user' ? '#3b82f6' : '#fff',
                                 color: msg.sender === 'user' ? '#fff' : '#222',
                                 borderRadius: 14,
-                                padding: '14px 18px',
+                                padding: '12px 16px',
                                 boxShadow: msg.sender === 'user' ? '0 2px 8px #3b82f61a' : '0 2px 8px #0001',
                                 fontSize: 15,
                                 wordBreak: 'break-word',
@@ -207,7 +207,7 @@ const AI_Assistant: React.FC = () => {
 
                                 {msg.attachments && msg.attachments.map((att) => (
                                     att.type === 'image' ? (
-                                        <img key={att.id} src={att.url} alt={att.name} style={{ marginTop: 8, maxWidth: 180, borderRadius: 8, border: '1px solid #eee' }} />
+                                        <img key={att.id} src={att.url} alt={att.name} style={{ marginTop: 8, maxWidth: '100%', borderRadius: 8, border: '1px solid #eee' }} />
                                     ) : att.type === 'file' ? (
                                         <a key={att.id} href={att.url} download={att.name} style={{ display: 'block', marginTop: 8, color: '#3b82f6', textDecoration: 'underline', fontSize: 14 }}>
                                             <FiFile style={{ marginRight: 4, verticalAlign: 'middle' }} />
@@ -248,13 +248,14 @@ const AI_Assistant: React.FC = () => {
                         <FiImage />
                         <input type="file" accept="image/*" style={{ display: 'none' }} multiple onChange={(e) => handleAttach(e, 'image')} />
                     </label>
-                    <button title="Record audio (not implemented)" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: '#6b7280' }} disabled>
-                        <FiMic />
-                    </button>
-                    <input type="text" placeholder="Ask me anything about your tasks..." value={input} onChange={(e) => setInput(e.target.value)} style={{ flex: 1, border: 'none', outline: 'none', fontSize: 16, background: 'transparent', padding: '8px 0' }} onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }} />
-                    <button onClick={handleSend} style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', fontWeight: 600, fontSize: 16, cursor: 'pointer', marginLeft: 6 }}>
-                        <FiSend style={{ verticalAlign: 'middle', marginRight: 4 }} />
-                        Send
+                    {window.innerWidth > 600 && (
+                        <button title="Record audio (not implemented)" style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: '#6b7280' }} disabled>
+                            <FiMic />
+                        </button>
+                    )}
+                    <input type="text" placeholder="Ask me anything..." value={input} onChange={(e) => setInput(e.target.value)} style={{ flex: 1, border: 'none', outline: 'none', fontSize: 16, background: 'transparent', padding: '8px 0', minWidth: 0 }} onKeyDown={(e) => { if (e.key === 'Enter') handleSend(); }} />
+                    <button onClick={handleSend} style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', fontWeight: 600, fontSize: 15, cursor: 'pointer', marginLeft: 6 }}>
+                        <FiSend style={{ verticalAlign: 'middle' }} />
                     </button>
                 </div>
             </div>

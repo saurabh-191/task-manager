@@ -8,14 +8,28 @@ import { routeConfig } from './contacts/Route';
 
 // Optional: Create a simple Home component inline or in a separate file
 
+import ProtectedRoute from './components/ProtectedRoute';
+
 function App() {
   return (
     <BrowserRouter> {/* Wrap everything in BrowserRouter */}
       <div className="App"> {/* Optional wrapper for global styles */}
         <Navigation /> {/* This will always show (e.g., navbar with links) */}
         <Routes> {/* Routes component wraps all Route elements */}
-          {routeConfig.map(({ path, element }, index) => (
-            <Route key={index} path={path} element={element} />
+          {routeConfig.map(({ path, element, isProtected }, index) => (
+            <Route
+              key={index}
+              path={path}
+              element={
+                isProtected ? (
+                  <ProtectedRoute>
+                    {element}
+                  </ProtectedRoute>
+                ) : (
+                  element
+                )
+              }
+            />
           ))}
         </Routes>
       </div>

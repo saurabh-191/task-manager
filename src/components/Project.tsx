@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { HEADER_HEIGHT } from "./Navigation";
+import { useMediaQuery, useTheme, Drawer, IconButton, Box, Typography, Button, Select, MenuItem } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
 
 const tasks = {
     todo: [
@@ -62,10 +64,6 @@ const projects = [
     { icon: "📦", label: "Project Delta" },
 ];
 
-/**
- * SidebarProjects was unused and removed to resolve the unused declaration error.
- */
-
 const boardTabs = ["Board", "List", "Timeline", "Calendar"];
 
 function Tag({ label, color, textColor }: { label: string; color: string; textColor: string }) {
@@ -99,6 +97,7 @@ function TaskCard({ title, tags }: { title: string; tags: any[] }) {
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
+                borderRadius: 8,
             }}
         >
             <div style={{ fontWeight: 500, marginBottom: 10 }}>{title}</div>
@@ -111,24 +110,10 @@ function TaskCard({ title, tags }: { title: string; tags: any[] }) {
     );
 }
 
-// Move these declarations outside of any function/component
-type NavLink = {
-    icon: string;
-    label: string;
-    active?: boolean;
-};
-
-const navLinks: NavLink[] = [
-    { icon: "🏠", label: "Dashboard" },
-    { icon: "📁", label: "Projects", active: true },
-    { icon: "📊", label: "Reports" },
-    { icon: "⚙️", label: "Settings" },
-];
-
 function BoardColumn({ title, count, tasks }: { title: string; count: number; tasks: any[] }) {
+    // Mobile: no minWidth blocking, allow stacking. Desktop: minWidth for columns.
     return (
-        // Column is a vertical flex container; tasks list is scrollable when overflow
-        <div style={{ flex: 1, minWidth: 300, marginRight: 24, display: 'flex', flexDirection: 'column', maxHeight: '100%' }}>
+        <div style={{ flex: 1, minWidth: 300, display: 'flex', flexDirection: 'column', maxHeight: '100%' }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
                 <span style={{ fontWeight: 600, fontSize: 18 }}>{title}</span>
                 <span
@@ -162,18 +147,18 @@ const sidebarWidth = 240;
 
 const Project: React.FC = () => {
     const [activeTab, setActiveTab] = useState<string>(boardTabs[0]);
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const [mobileOpen, setMobileOpen] = useState(false);
 
     const isBoard = activeTab === 'Board';
 
-    return (
-    // Container fills viewport minus header so header remains visible while content scrolls
-    <div style={{ display: "flex", height: `calc(100vh - ${HEADER_HEIGHT}px)`, background: "#f8fafc", overflow: 'hidden' }}>
-        {/* Sidebar */}
-        <aside
+    const SidebarContent = (
+        <div
             style={{
-                width: sidebarWidth,
+                width: isMobile ? '100%' : sidebarWidth,
+                height: '100%',
                 background: "#fff",
-                borderRight: "1px solid #e5e7eb",
                 display: "flex",
                 flexDirection: "column",
                 padding: "0 0 24px 0",
@@ -181,9 +166,10 @@ const Project: React.FC = () => {
         >
             <div style={{ fontWeight: 700, fontSize: 22, padding: "28px 32px 24px" }}>Projects</div>
             <div style={{ flex: 1, overflowY: 'auto', paddingRight: 0 }}>
-                {projects.map((link, idx) => (
+                {projects.map((link) => (
                     <div
                         key={link.label}
+                        onClick={() => isMobile && setMobileOpen(false)}
                         style={{
                             display: "flex",
                             alignItems: "center",
@@ -223,46 +209,99 @@ const Project: React.FC = () => {
                     + Invite members
                 </div>
             </div>
-        </aside>
+        </div>
+    );
 
-        {/* Main Content */}
-        <main style={{ flex: 1, height: '100%', overflowY: isBoard ? 'hidden' : 'auto', padding: "0 0 0 0" }}>
-            <div style={{ maxWidth: 1200, margin: "0 auto", padding: "40px 40px 0 40px", display: 'flex', flexDirection: 'column', height: '100%' }}>
-                {/* Project Title */}
-                <div>
-                    <div style={{ fontSize: 36, fontWeight: 700, color: "#1e293b" }}>Project Alpha</div>
-                    <div style={{ color: "#64748b", fontSize: 16, marginTop: 4, marginBottom: 28 }}>
-                        Enhancing core product offerings and expanding market reach.
-                    </div>
-                </div>
-                {/* Tabs */}
-                <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', marginBottom: 32 }}>
-                    {boardTabs.map((tab) => (
-                        <div
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            style={{
-                                padding: '0 24px 12px 0',
-                                fontWeight: activeTab === tab ? 600 : 500,
-                                color: activeTab === tab ? '#2563eb' : '#64748b',
-                                borderBottom: activeTab === tab ? '2.5px solid #2563eb' : 'none',
-                                cursor: 'pointer',
-                                fontSize: 16,
-                            }}
-                        >
-                            {tab}
+    return (
+        <div style={{ display: "flex", height: `calc(100vh - ${HEADER_HEIGHT}px)`, background: "#f8fafc", overflow: 'hidden', flexDirection: 'column' }}>
+
+            {/* Mobile Sidebar Toggle - only show if mobile */}
+            {isMobile && (
+                <Box sx={{ p: 2, bgcolor: '#fff', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Typography fontWeight={700} fontSize={18}>Project Alpha</Typography>
+                    <IconButton onClick={() => setMobileOpen(true)}>
+                        <MenuIcon />
+                    </IconButton>
+                </Box>
+            )}
+
+            <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+                {/* Desktop Sidebar */}
+                {!isMobile && (
+                    <aside style={{ height: '100%', borderRight: "1px solid #e5e7eb", background: '#fff' }}>
+                        {SidebarContent}
+                    </aside>
+                )}
+
+                {/* Mobile Sidebar Drawer */}
+                <Drawer
+                    anchor="left"
+                    open={mobileOpen}
+                    onClose={() => setMobileOpen(false)}
+                    sx={{ '& .MuiDrawer-paper': { width: 280 } }}
+                >
+                    {SidebarContent}
+                </Drawer>
+
+                {/* Main Content */}
+                <main style={{ flex: 1, height: '100%', overflowY: isBoard && !isMobile ? 'hidden' : 'auto', padding: 0 }}>
+                    <div style={{
+                        maxWidth: 1200,
+                        margin: "0 auto",
+                        padding: isMobile ? "24px 16px" : "40px 40px 0 40px",
+                        display: 'flex',
+                        flexDirection: 'column',
+                        height: isMobile ? 'auto' : '100%'
+                    }}>
+                        {/* Project Title (Desktop only, mobile shows in header) */}
+                        {!isMobile && (
+                            <div>
+                                <div style={{ fontSize: 36, fontWeight: 700, color: "#1e293b" }}>Project Alpha</div>
+                                <div style={{ color: "#64748b", fontSize: 16, marginTop: 4, marginBottom: 28 }}>
+                                    Enhancing core product offerings and expanding market reach.
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tabs */}
+                        <div style={{ display: 'flex', borderBottom: '1px solid #e5e7eb', marginBottom: 32, overflowX: 'auto' }}>
+                            {boardTabs.map((tab) => (
+                                <div
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    style={{
+                                        padding: '0 24px 12px 0',
+                                        fontWeight: activeTab === tab ? 600 : 500,
+                                        color: activeTab === tab ? '#2563eb' : '#64748b',
+                                        borderBottom: activeTab === tab ? '2.5px solid #2563eb' : 'none',
+                                        cursor: 'pointer',
+                                        fontSize: 16,
+                                        whiteSpace: 'nowrap'
+                                    }}
+                                >
+                                    {tab}
+                                </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
-                {/* Board / List container */}
-                <div style={{ display: 'flex', gap: 24, flex: 1, overflowX: isBoard ? 'auto' : 'hidden', alignItems: 'flex-start' }}>
-                    <BoardColumn title="To Do" count={tasks.todo.length} tasks={tasks.todo} />
-                    <BoardColumn title="In Progress" count={tasks.inProgress.length} tasks={tasks.inProgress} />
-                    <BoardColumn title="Done" count={tasks.done.length} tasks={tasks.done} />
-                </div>
+
+                        {/* Board / List container */}
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: isMobile ? 'column' : 'row',
+                            gap: 24,
+                            flex: 1,
+                            overflowX: isBoard && !isMobile ? 'auto' : 'hidden',
+                            alignItems: 'flex-start',
+                            paddingBottom: 24 // Add some bottom padding for scroll
+                        }}>
+                            <BoardColumn title="To Do" count={tasks.todo.length} tasks={tasks.todo} />
+                            <BoardColumn title="In Progress" count={tasks.inProgress.length} tasks={tasks.inProgress} />
+                            <BoardColumn title="Done" count={tasks.done.length} tasks={tasks.done} />
+                        </div>
+                    </div>
+                </main>
             </div>
-        </main>
-    </div>
+        </div>
     );
 }
 

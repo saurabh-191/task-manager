@@ -1,13 +1,15 @@
 .login {
-  width: 50%;
+  width: 100%;
+  max-width: 500px;
   margin: auto;
-  padding: 5rem;
+  padding: 2rem;
 }
 
 .signup {
-  width: 50%;
+  width: 100%;
+  max-width: 500px;
   margin: auto;
-  padding: 5rem;
+  padding: 2rem;
 }
 
 .logo {
@@ -16,9 +18,11 @@
   will-change: filter;
   transition: filter 300ms;
 }
+
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
+
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
@@ -27,6 +31,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }

@@ -4,7 +4,11 @@
 
 #root {
   /* color: #eaeaea; */
-  background-color:#e3e3e3
+  background-color:#e3e3e3;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 a {
   font-weight: 500;

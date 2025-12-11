@@ -11,7 +11,7 @@ const Settings: React.FC = () => {
                 background: "#f7f8f9",
                 minHeight: "100vh",
                 fontFamily: "Inter, Arial, sans-serif",
-                padding: 0,
+                padding: "0 16px",
                 margin: 0,
             }}
         >
@@ -76,12 +76,12 @@ const Settings: React.FC = () => {
                     <WorkflowCard
                         label="Create New Workflow"
                         buttonLabel="Create"
-                        onClick={() => {}}
+                        onClick={() => { }}
                     />
                     <WorkflowCard
                         label="Edit Existing Workflow"
                         buttonLabel="Edit"
-                        onClick={() => {}}
+                        onClick={() => { }}
                     />
                 </div>
 
@@ -142,6 +142,7 @@ function SettingRow({
     description: string;
     control: React.ReactNode;
 }) {
+    // Responsive row: wrap if needed
     return (
         <div
             style={{
@@ -149,9 +150,11 @@ function SettingRow({
                 alignItems: "center",
                 justifyContent: "space-between",
                 padding: "20px 0",
+                flexWrap: "wrap",
+                gap: 16
             }}
         >
-            <div>
+            <div style={{ flex: 1, minWidth: 200 }}>
                 <div style={{ fontWeight: 500, fontSize: 15 }}>{label}</div>
                 <div style={{ color: "#6b7280", fontSize: 13 }}>{description}</div>
             </div>

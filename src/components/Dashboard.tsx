@@ -20,7 +20,7 @@ const taskSummary = [
         subtitle: "6 tasks",
         image: "https://images.unsplash.com/photo-1465101178521-c1a9136a3b99?auto=format&fit=crop&w=80&q=80",
     },
-     {
+    {
         title: "Completed This Week",
         count: 5,
         subtitle: "1 tasks",
@@ -49,131 +49,73 @@ const teamActivity = [
     },
 ];
 
+import { Grid, Box, Typography, Card, Avatar } from '@mui/material';
+
 const Dashboard: React.FC = () => {
     return (
-        <div style={{ background: "#F5F7FA", minHeight: "100vh", padding: 0 }}>
-            {/* Header */}
-            
-
-            {/* Main Content */}
-            <div style={{ maxWidth: "90%", margin: "0 auto", padding: "32px 0" }}>
-                {/* <div> */}
-                    <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 8 }}>Good morning, Sarah</h1>
-
-
-                    {/* Buttons */}
-                    {/* <div style={{ display: "flex", gap: 12, marginBottom: 32 }}>
-                        <button
-                            style={{
-                                background: "#E5E9F2",
-                                color: "#222",
-                                border: "none",
-                                borderRadius: 8,
-                                padding: "10px 24px",
-                                fontWeight: 600,
-                                fontSize: 15,
-                                cursor: "pointer",
-                            }}
-                        >
-                            View All
-                        </button>
-                        <button
-                            style={{
-                                background: "#1976D2",
-                                color: "#fff",
-                                border: "none",
-                                borderRadius: 8,
-                                padding: "10px 24px",
-                                fontWeight: 600,
-                                fontSize: 15,
-                                cursor: "pointer",
-                            }}
-                        >
-                            New Task
-                        </button>
-                    </div> */}
-                {/* </div> */}
+        <Box sx={{ bgcolor: '#F5F7FA', minHeight: '100vh', p: { xs: 2, md: 4 } }}>
+            <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
+                <Typography variant="h4" fontWeight="700" sx={{ mb: 1, fontSize: { xs: '1.5rem', md: '2.125rem' } }}>
+                    Good morning, Sarah
+                </Typography>
 
                 {/* Task Summary */}
-                <div>
-                    <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>My Task Summary</h2>
-                    <div style={{ display: "flex", gap: 24, marginBottom: 32 }}>
+                <Box sx={{ mt: 4 }}>
+                    <Typography variant="h6" fontWeight="600" sx={{ mb: 2 }}>My Task Summary</Typography>
+                    <Grid container spacing={3}>
                         {taskSummary.map((item, idx) => (
-                            <div
-                                key={item.title}
-                                style={{
-                                    background: "#fff",
-                                    borderRadius: 16,
-                                    padding: "24px 24px 16px 24px",
-                                    flex: 1,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "space-between",
-                                    boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+                            <Grid item xs={12} sm={6} md={3} key={item.title}>
+                                <Card sx={{
+                                    p: 3,
+                                    borderRadius: 4,
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
                                     border: item.highlight ? "1.5px solid #FF5A5F" : "none",
-                                }}
-                            >
-                                <div>
-                                    <div style={{ fontWeight: 600, fontSize: 17 }}>{item.title}</div>
-                                    <div style={{ color: item.highlight ? "#FF5A5F" : "#888", fontSize: 15, marginTop: 4 }}>
-                                        {item.subtitle}
-                                    </div>
-                                </div>
-                                <img
-                                    src={item.image}
-                                    alt={item.title}
-                                    style={{
-                                        width: 64,
-                                        height: 64,
-                                        borderRadius: 12,
-                                        objectFit: "cover",
-                                        marginLeft: 16,
-                                    }}
-                                />
-                            </div>
+                                    height: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between'
+                                }}>
+                                    <Box>
+                                        <Typography fontWeight="600" fontSize={17}>{item.title}</Typography>
+                                        <Typography color={item.highlight ? "#FF5A5F" : "text.secondary"} fontSize={15} sx={{ mt: 0.5 }}>
+                                            {item.subtitle}
+                                        </Typography>
+                                    </Box>
+                                    <Avatar src={item.image} variant="rounded" sx={{ width: 64, height: 64, borderRadius: 3 }} />
+                                </Card>
+                            </Grid>
                         ))}
-                    </div>
-                </div>
+                    </Grid>
+                </Box>
 
                 {/* Team Activity */}
-                <div>
-                    <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>Team Activity</h2>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <Box sx={{ mt: 4 }}>
+                    <Typography variant="h6" fontWeight="600" sx={{ mb: 2 }}>Team Activity</Typography>
+                    <Grid container spacing={2}>
                         {teamActivity.map((activity, idx) => (
-                            <div
-                                key={idx}
-                                style={{
-                                    background: "#fff",
-                                    borderRadius: 12,
-                                    padding: "18px 24px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 18,
-                                    boxShadow: "0 2px 8px rgba(0,0,0,0.01)",
-                                }}
-                            >
-                                <img
-                                    src={activity.avatar}
-                                    alt={activity.name}
-                                    style={{
-                                        width: 48,
-                                        height: 48,
-                                        borderRadius: "50%",
-                                        objectFit: "cover",
-                                    }}
-                                />
-                                <div>
-                                    <div style={{ fontWeight: 500, fontSize: 15 }}>
-                                        {activity.name} <span style={{ color: "#444" }}>{activity.action}</span>
-                                    </div>
-                                    <div style={{ color: "#8A94A6", fontSize: 14, marginTop: 2 }}>{activity.project}</div>
-                                </div>
-                            </div>
+                            <Grid item xs={12} key={idx}>
+                                <Card sx={{
+                                    p: { xs: 2, md: 3 },
+                                    borderRadius: 3,
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.01)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 2
+                                }}>
+                                    <Avatar src={activity.avatar} sx={{ width: 48, height: 48 }} />
+                                    <Box>
+                                        <Typography fontWeight="500" fontSize={15}>
+                                            {activity.name} <Typography component="span" color="text.secondary">{activity.action}</Typography>
+                                        </Typography>
+                                        <Typography color="text.secondary" fontSize={14} sx={{ mt: 0.5 }}>{activity.project}</Typography>
+                                    </Box>
+                                </Card>
+                            </Grid>
                         ))}
-                    </div>
-                </div>
-            </div>
-        </div>
+                    </Grid>
+                </Box>
+            </Box>
+        </Box>
     );
 };
 

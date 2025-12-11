@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link as RouterLink, useLocation } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import {
     AppBar,
     Toolbar,
@@ -13,11 +13,18 @@ import {
     Paper,
     MenuItem,
     Menu,
+    IconButton,
+    Drawer,
+    List,
+    ListItem,
+    ListItemButton,
+    ListItemText,
+    useMediaQuery,
 } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
 import type { ButtonProps } from '@mui/material';
 import { styled } from '@mui/material/styles';
-
-const isAuthenticated = true;
 
 export const HEADER_HEIGHT = 72; // px - keep in sync with Toolbar minHeight
 
@@ -55,12 +62,18 @@ const SearchBox = styled(Paper)(({ theme }) => ({
 
 const Navigation: React.FC = () => {
     const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const location = useLocation();
+    const navigate = useNavigate();
+    const isAuthenticated = !!localStorage.getItem('token');
+
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
 
     const isRouteActive = (path: string) => {
         if (!path) return false;
         if (path === '/') return location.pathname === '/';
-        return location.pathname === path || location.pathname.startsWith(path + '/') || location.pathname.startsWith(path);
+        return location.pathname === path || location.pathname.startsWith(path + '/');
     };
 
     const navSx = (path: string, extra: any = {}) => ({
@@ -68,20 +81,95 @@ const Navigation: React.FC = () => {
         ...(isRouteActive(path) ? { background: theme.palette.primary.main, color: '#fff', fontWeight: 700 } : {}),
     });
 
-    const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+    const handleLogout = () => {
+        setMenuAnchorEl(null);
+        setMobileOpen(false);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+    };
+
+    const handleDrawerToggle = () => {
+        setMobileOpen(!mobileOpen);
+    };
+
+    const navLinks = [
+        { label: 'Home', path: '/' },
+        { label: 'My Tasks', path: '/my-tasks' },
+        { label: 'Projects', path: '/projects' },
+        { label: 'Reports', path: '/reports' },
+        { label: 'WorkLogs', path: '/worklogs' },
+        { label: 'AI Assistant', path: '/ai-assistant' },
+    ];
+
+    const drawerContent = (
+        <Box sx={{ width: 250, pt: 2 }} role="presentation">
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 2, mb: 2 }}>
+                <Typography variant="h6" fontWeight="bold" color="primary">TaskMaster</Typography>
+                <IconButton onClick={handleDrawerToggle}>
+                    <CloseIcon />
+                </IconButton>
+            </Box>
+            <Divider />
+            <List>
+                {isAuthenticated ? (
+                    navLinks.map((link) => (
+                        <ListItem key={link.label} disablePadding>
+                            <ListItemButton
+                                component={RouterLink}
+                                to={link.path}
+                                onClick={handleDrawerToggle}
+                                selected={isRouteActive(link.path)}
+                                sx={{
+                                    '&.Mui-selected': {
+                                        bgcolor: 'primary.light',
+                                        color: 'primary.contrastText',
+                                        '&:hover': { bgcolor: 'primary.main' },
+                                    },
+                                    borderRadius: 1,
+                                    mx: 1,
+                                }}
+                            >
+                                <ListItemText primary={link.label} />
+                            </ListItemButton>
+                        </ListItem>
+                    ))
+                ) : (
+                    <>
+                        <ListItem disablePadding>
+                            <ListItemButton component={RouterLink} to="/login" onClick={handleDrawerToggle}>
+                                <ListItemText primary="Login" />
+                            </ListItemButton>
+                        </ListItem>
+                        <ListItem disablePadding>
+                            <ListItemButton component={RouterLink} to="/signup" onClick={handleDrawerToggle}>
+                                <ListItemText primary="Sign Up" />
+                            </ListItemButton>
+                        </ListItem>
+                    </>
+                )}
+            </List>
+        </Box>
+    );
 
     return (
         <FlatAppBar position="static" elevation={0}>
             <Toolbar sx={{ justifyContent: 'space-between', minHeight: 72 }}>
-                {/* Left: Logo & App Name */}
+                {/* Left: Logo & Nav or Hamburger */}
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            mr: 1,
-                        }}
-                    >
+                    {isMobile && (
+                        <IconButton
+                            color="inherit"
+                            aria-label="open drawer"
+                            edge="start"
+                            onClick={handleDrawerToggle}
+                            sx={{ mr: 2, color: 'text.primary' }}
+                        >
+                            <MenuIcon />
+                        </IconButton>
+                    )}
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', mr: 1 }}>
                         <img
                             src="/logo.png"
                             alt="Logo"
@@ -93,68 +181,58 @@ const Navigation: React.FC = () => {
                             }}
                         />
                     </Box>
-                    <Typography
-                        variant="h6"
-                        sx={{
-                            fontWeight: 700,
-                            letterSpacing: 1,
-                            color: theme.palette.primary.main,
-                            userSelect: 'none',
-                        }}
-                    >
-                        TaskMaster
-                    </Typography>
-                    <Divider orientation="vertical" flexItem sx={{ mx: 2, height: 32 }} />
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        {!isAuthenticated ? (
-                            <>
-                                <NavButton component={RouterLink} to="/login" variant="text" sx={navSx('/login')}>
-                                    Login
-                                </NavButton>
-                                <NavButton
-                                    component={RouterLink}
-                                    to="/signup"
-                                    variant="contained"
-                                    sx={navSx('/signup', {
-                                        ml: 1,
-                                        background: theme.palette.primary.main,
-                                        color: '#fff',
-                                        '&:hover': {
-                                            background: theme.palette.primary.dark,
-                                        },
-                                    })}
-                                >
-                                    Sign Up
-                                </NavButton>
-                            </>
-                        ) : (
-                            <>
-                                <NavButton component={RouterLink} to="/" sx={navSx('/')}>
-                                    Home
-                                </NavButton>
-                                <NavButton component={RouterLink} to="/my-tasks" sx={navSx('/my-tasks')}>
-                                    My Tasks
-                                </NavButton>
-                                <NavButton component={RouterLink} to="/projects" sx={navSx('/projects')}>
-                                    Projects
-                                </NavButton>
-                                <NavButton component={RouterLink} to="/reports" sx={navSx('/reports')}>
-                                    Reports
-                                </NavButton>
-                                <NavButton component={RouterLink} to="/worklogs" sx={navSx('/worklogs')}>
-                                    WorkLogs
-                                </NavButton>
-                                <NavButton component={RouterLink} to="/ai-assistant" sx={navSx('/ai-assistant')}>
-                                    AI Assistant
-                                </NavButton>
-                            </>
-                        )}
-                    </Box>
+                    {!isMobile && (
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                fontWeight: 700,
+                                letterSpacing: 1,
+                                color: theme.palette.primary.main,
+                                userSelect: 'none',
+                                mr: 2,
+                            }}
+                        >
+                            TaskMaster
+                        </Typography>
+                    )}
+
+                    {!isMobile && (
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            {!isAuthenticated ? (
+                                <>
+                                    <NavButton component={RouterLink} to="/login" variant="text" sx={navSx('/login')}>
+                                        Login
+                                    </NavButton>
+                                    <NavButton
+                                        component={RouterLink}
+                                        to="/signup"
+                                        variant="contained"
+                                        sx={navSx('/signup', {
+                                            ml: 1,
+                                            background: theme.palette.primary.main,
+                                            color: '#fff',
+                                            '&:hover': {
+                                                background: theme.palette.primary.dark,
+                                            },
+                                        })}
+                                    >
+                                        Sign Up
+                                    </NavButton>
+                                </>
+                            ) : (
+                                navLinks.map(link => (
+                                    <NavButton key={link.label} component={RouterLink} to={link.path} sx={navSx(link.path)}>
+                                        {link.label}
+                                    </NavButton>
+                                ))
+                            )}
+                        </Box>
+                    )}
                 </Box>
 
                 {/* Right: Search & Profile */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    {isAuthenticated && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: isMobile ? 1 : 2 }}>
+                    {isAuthenticated && !isMobile && (
                         <SearchBox>
                             <InputBase
                                 placeholder="Search…"
@@ -216,7 +294,7 @@ const Navigation: React.FC = () => {
                                 <MenuItem component={RouterLink} to="/integrations" onClick={() => setMenuAnchorEl(null)}>
                                     Integrations
                                 </MenuItem>
-                                <MenuItem onClick={() => { setMenuAnchorEl(null); /* handle logout here */ }}>
+                                <MenuItem onClick={handleLogout}>
                                     Logout
                                 </MenuItem>
                                 <Divider />
@@ -228,6 +306,21 @@ const Navigation: React.FC = () => {
                     )}
                 </Box>
             </Toolbar>
+
+            <Drawer
+                variant="temporary"
+                open={mobileOpen}
+                onClose={handleDrawerToggle}
+                ModalProps={{
+                    keepMounted: true, // Better open performance on mobile.
+                }}
+                sx={{
+                    display: { xs: 'block', md: 'none' },
+                    '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 250 },
+                }}
+            >
+                {drawerContent}
+            </Drawer>
         </FlatAppBar>
     );
 };
